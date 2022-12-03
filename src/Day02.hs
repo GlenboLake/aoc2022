@@ -1,3 +1,4 @@
+module Day02 (part1, part2) where
 data Throw = Rock | Paper | Scissors deriving (Enum, Show, Bounded)
 type Matchup = (Throw, Throw)
 

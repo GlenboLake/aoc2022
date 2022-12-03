@@ -1,3 +1,4 @@
+module Day01 (part1, part2) where
 import Data.List (sort)
 import Data.List.Split
 
