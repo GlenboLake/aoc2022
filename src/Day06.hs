@@ -1,10 +1,11 @@
 module Day06 where
 import Data.List
 
-markerLength = 4
-
-checkAt :: Eq a => [a] -> Int -> Bool
-checkAt input n = let chars = drop (n-4) $ take n input
+checkAt :: Eq a => [a] -> Int -> Int -> Bool
+checkAt input markerLength n = let chars = drop (n-markerLength) $ take n input
   in length (nub chars) == markerLength
 
-part1 input = head $ filter (checkAt input) [1..]
+solve input markerLength = head $ filter (checkAt input markerLength) [1..]
+
+part1 input = solve input 4
+part2 input = solve input 14
