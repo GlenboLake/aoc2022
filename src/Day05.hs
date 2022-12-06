@@ -1,4 +1,4 @@
-module Day05 where
+module Day05 (part1, part2) where
 import Data.List.Split (splitOn)
 
 type Layout = [String]

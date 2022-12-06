@@ -1,4 +1,4 @@
-module Day06 where
+module Day06 (part1, part2) where
 import Data.List
 
 checkAt :: Eq a => [a] -> Int -> Int -> Bool
