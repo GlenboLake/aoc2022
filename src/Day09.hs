@@ -60,8 +60,10 @@ followPath :: Rope -> [Dir] -> [Rope]
 followPath rope [] = [rope]
 followPath rope (d:ds) = rope:(followPath (move rope d) ds)
 
-part1 input = length $ nub $ map last $ followPath (newRope 2) $ parseInput input
-part2 input = ""
+runDay ropeLength input = length $ nub $ map last $ followPath (newRope ropeLength) $ parseInput input
+
+part1 input = runDay 2 input
+part2 input = runDay 10 input
 
 main input = do
   putStr "Part 1: "
