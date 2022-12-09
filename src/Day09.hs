@@ -3,10 +3,10 @@ import AOC (solve)
 import Data.List (nub)
 
 type Point = (Int, Int)
-type Rope = (Point, Point)
+type Rope = [Point]
 
-initRope :: Rope
-initRope = ((0,0),(0,0))
+newRope :: Int -> Rope
+newRope size = replicate size (0,0)
 
 data Dir = L | R | U | D
   deriving (Show)
@@ -25,25 +25,42 @@ parseLine line =
 touches :: Point -> Point -> Bool
 (x1,y1) `touches` (x2,y2) = abs (x1-x2) <= 1 && abs (y1-y2) <= 1
 
+sign :: (Ord a, Num a) => a -> a
+sign a = if a>0 then 1 else if a<0 then -1 else 0
+
+-- Logic for making one point move, diagonally if necessary, to touch another
+moveToTouch :: Point -> Point -> Point
+moveToTouch (px,py) (tx,ty) =
+  if (px,py) `touches` (tx,ty)
+    then (px,py)
+    else let (mx,my) = (sign $ tx-px, sign $ ty-py)
+         in moveToTouch (px+mx,py+my) (tx,ty)
+
+-- Move a point in a cardinal direction
+moveTo :: Point -> Dir -> Point
+(px,py) `moveTo` dir =
+  case dir of
+    L -> (px-1, py)
+    R -> (px+1, py)
+    U -> (px, py+1)
+    D -> (px, py-1)
+
+catchup :: [Point] -> Point -> [Point]
+catchup [] _ = []
+catchup (p:ps) target =
+  let newHead = moveToTouch p target
+  in newHead:(catchup ps newHead)
+
 move :: Rope -> Dir -> Rope
-move ((hx,hy), t) dir = do
-  let newHead = case dir of L -> (hx-1, hy)
-                            R -> (hx+1, hy)
-                            U -> (hx, hy+1)
-                            D -> (hx, hy-1)
-  let newTail = if newHead `touches` t then t else (hx, hy)
-  (newHead, newTail)
+move (p:ps) dir =
+  let newHead = p `moveTo` dir
+  in newHead:(catchup ps newHead)
 
 followPath :: Rope -> [Dir] -> [Rope]
 followPath rope [] = [rope]
 followPath rope (d:ds) = rope:(followPath (move rope d) ds)
 
-debug input = do
-  let path = parseInput input
-  followPath initRope path
-
-
-part1 input = length $ nub $ map snd $ followPath initRope $ parseInput input
+part1 input = length $ nub $ map last $ followPath (newRope 2) $ parseInput input
 part2 input = ""
 
 main input = do
