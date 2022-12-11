@@ -1,9 +1,12 @@
 module Day10 where
 import AOC (solve)
+import Data.Char (chr)
 import Data.List (isInfixOf, intercalate)
 import Data.List.Split (chunksOf)
 
 type Cycles = [Int]
+
+block = chr 9608
 
 newRegister :: Cycles
 newRegister = [1]
@@ -27,8 +30,8 @@ part1 input = do
 part2 input = do
   let registerHistory = readProgram newRegister $ lines input
   let spriteHistory = map (\ x -> [x-1..x+1]) registerHistory
-  let crt = [ if sprite `contains` (pixel `mod` 40) then '#'
-              else                            ' '
+  let crt = [ if sprite `contains` (pixel `mod` 40) then block
+                                                    else ' '
               | (pixel, sprite) <- zip [0..] spriteHistory ]
   intercalate "\n" $ chunksOf 40 crt
 
