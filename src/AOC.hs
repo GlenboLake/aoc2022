@@ -1,5 +1,8 @@
-module AOC (solve) where
-
+module AOC (solve, isNumeric) where
+  
+isNumeric :: Char -> Bool
+isNumeric c = c `elem` "-1234567890"
+  
 escapingPrint :: Show b => b -> IO ()
 escapingPrint thing = do
   let s = show thing

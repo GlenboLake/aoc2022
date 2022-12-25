@@ -1,5 +1,5 @@
 module Day15 where
-import AOC (solve)
+import AOC (solve, isNumeric)
 import Data.List (nub, sort)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -49,8 +49,6 @@ manhattan (x1,y1) (x2,y2) = abs (x1-x2) + abs (y1-y2)
 data Sensor = Sensor { loc :: Coord
                      , beacon :: Coord
                      } deriving (Show)
-
-isNumeric c = c `elem` "-1234567890"
 
 parseInput :: String -> [Sensor]
 parseInput input = map parseSensor $ lines input

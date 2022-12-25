@@ -1,5 +1,5 @@
 module Day13 where
-import AOC (solve)
+import AOC (solve, isNumeric)
 import Data.List (elemIndices, sort)
 import Data.List.Split (splitOn)
 import System.IO.Unsafe (unsafePerformIO)
@@ -13,8 +13,6 @@ instance Ord Packet where
   compare (P as) (P bs) = compare as bs
   compare (I a) (P bs) = compare (P [I a]) (P bs)
   compare (P as) (I b) = compare (P as) (P [I b])
-
-isNumeric c = c `elem` "-1234567890"
 
 readPacket :: String -> Packet
 readPacket "" = P []
