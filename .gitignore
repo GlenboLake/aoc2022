@@ -1,4 +1,6 @@
 .stack-work/
 *~
 dist
+dist-newstyle
 /stack.yaml.lock
+.ghc.environment.*
