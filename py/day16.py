@@ -2,8 +2,9 @@ import re
 import sys
 from collections import deque
 from pathlib import Path
-from pprint import pprint
 from typing import NamedTuple, List, Dict, Tuple
+
+from timer import report_time
 
 label_regex = re.compile(r"(?<=Valve )\w+")
 flow_regex = re.compile(r"(?<=flow rate=)\d+")
@@ -87,6 +88,54 @@ def part1(filename):
     return max(score for (t, *_), score in scores.items() if t == 30)
 
 
+def part1_more_cache(filename):
+    valves, distances = parse_input(filename)
+    # Update all distances to include the time to open the valve
+    distances = {
+        k: {
+            k2: v2 + 1
+            for k2, v2 in v.items()
+        }
+        for k, v in distances.items()
+    }
+
+    start = 'AA'
+    init_state = (30, frozenset(), start)
+    scores = {init_state: 0}
+    states = deque([init_state])
+
+    def final_pressure(state_):
+        time_left, opened, _ = state_
+        pressure_per_minute = sum(valves[v].flow_rate for v in opened)
+        return scores[state_] + time_left * pressure_per_minute
+
+    best = 0
+    while states:
+        state = states.popleft()
+        t, open_valves, location = state
+        total_pressure = scores[state]
+        pressure_per_tick = sum(valves[v].flow_rate for v in open_valves)
+        possible_dests = [
+            (room, dist)
+            for room, dist in distances[location].items()
+            if room not in open_valves
+               and dist < t
+        ]
+        neighbor_states = [
+            (
+                (t - ticks, open_valves | {room}, room),  # State
+                total_pressure + ticks * pressure_per_tick  # new pressure
+            )
+            for room, ticks in possible_dests
+        ]
+        for s, p in neighbor_states:
+            if p > scores.get(s, -1):
+                scores[s] = p
+                states.append(s)
+                best = max(best, final_pressure(s))
+    return max([final_pressure(s) for s in scores])
+
+
 def part2(filename):
     # Same as part 1, but now there are two entities that can move and open valves
     valves, distances = parse_input(filename)
@@ -108,6 +157,13 @@ def part2(filename):
 
 
 if __name__ == '__main__':
-    assert part1(input_dir / 'sample16.txt') == 1651
-    # print(part1(input_dir / 'day16.txt'))
-    assert part2(input_dir / 'sample16.txt') == 1707
+    print('Checking sample for part 1...')
+    with report_time():
+        assert part1(input_dir / 'sample16.txt') == 1651
+    with report_time():
+        assert part1_more_cache(input_dir / 'sample16.txt') == 1651
+    with report_time():
+        print(part1(input_dir / 'day16.txt'))
+    with report_time():
+        print(part1_more_cache(input_dir / 'day16.txt'))
+    # assert part2(input_dir / 'sample16.txt') == 1707
