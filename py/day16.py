@@ -109,6 +109,7 @@ def part1(filename):
     while states:
         state = states.popleft()
         neighbor_states = state.neighbors(scores[state])
+        # print(f'Queue: {len(states)}, keeping {len([1 for s,p in neighbor_states if p > scores.get(s, -1)])}')
         for s, p in neighbor_states:
             if p > scores.get(s, -1):
                 scores[s] = p
@@ -142,6 +143,5 @@ if __name__ == '__main__':
         assert part1(input_dir / 'sample16.txt') == 1651
     print('Solving...')
     with report_time():
-        print('Improved method: ', end='')
         print(part1(input_dir / 'day16.txt'))
     # assert part2(input_dir / 'sample16.txt') == 1707
