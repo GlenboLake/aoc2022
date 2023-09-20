@@ -3,6 +3,8 @@ import Data.List (nub)
 import qualified Data.Map as M
 import Data.Map (Map, (!))
 import qualified Data.Set as S
+import Data.Sequence (ViewL(..), (><))
+import qualified Data.Sequence as Seq
 
 type RoomID = String
 
@@ -81,17 +83,18 @@ finalPressure g s cp = cp + timeLeft s * pressurePerTick s g
 -- Actual solution
 
 search :: Graph -> Int
-search g = doSearch [emptyState] emptyHistory
+search g = doSearch (Seq.singleton emptyState) emptyHistory
   where
     dm = distanceMap g
-    doSearch :: [State] -> History -> Int
-    doSearch [] h = maximum $ M.elems $ M.mapWithKey (finalPressure g) h
-    doSearch (s:ss) h = doSearch (ss ++ M.keys addedStates) (M.union addedStates h)
-      where
-        currentPressure = h ! s
-        neighborStates = neighbors s currentPressure g dm
-        addedStates = M.fromList $ filter isBetterScore neighborStates
-        isBetterScore :: (State, Int) -> Bool
-        isBetterScore (score, pressure) = pressure > (M.findWithDefault (-1) score h)
+    doSearch :: Seq.Seq State -> History -> Int
+    doSearch sss h =
+      case Seq.viewl sss of
+        Seq.EmptyL -> maximum $ M.elems $ M.mapWithKey (finalPressure g) h
+        s :< ss   -> let currentPressure = h ! s
+                         neighborStates = neighbors s currentPressure g dm
+                         addedStates = M.fromList $ filter isBetterScore neighborStates
+                         isBetterScore :: (State, Int) -> Bool
+                         isBetterScore (score, pressure) = pressure > (M.findWithDefault (-1) score h)
+                     in doSearch (ss >< Seq.fromList (M.keys addedStates)) (M.union addedStates h)
 
 part1 input = search $ parseInput input
