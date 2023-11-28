@@ -59,17 +59,7 @@ def parse_input(filename) -> Tuple[ValveDict, DistanceMap]:
     }
 
 
-def part1(filename):
-    valves, distances = parse_input(filename)
-    # Update all distances to include the time to open the valve
-    distances = {
-        k: {
-            k2: v2 + 1
-            for k2, v2 in v.items()
-        }
-        for k, v in distances.items()
-    }
-
+def bfs(valves, distances, max_time):
     class State(NamedTuple):
         time_left: int
         opened_valves: frozenset
@@ -77,7 +67,7 @@ def part1(filename):
 
         @classmethod
         def init_state(cls):
-            return cls(30, frozenset(), 'AA')
+            return cls(max_time, frozenset(), 'AA')
 
         @property
         def pressure_per_tick(self):
@@ -114,27 +104,47 @@ def part1(filename):
             if p > scores.get(s, -1):
                 scores[s] = p
                 states.append(s)
+    return scores
+
+
+def part1(filename):
+    valves, distances = parse_input(filename)
+    # Update all distances to include the time to open the valve
+    distances = {
+        k: {
+            k2: v2 + 1
+            for k2, v2 in v.items()
+        }
+        for k, v in distances.items()
+    }
+    scores = bfs(valves, distances, 30)
     return max(s.final_pressure(p) for s, p in scores.items())
 
 
 def part2(filename):
-    # Same as part 1, but now there are two entities that can move and open valves
     valves, distances = parse_input(filename)
-    # A state is now: t, open valves, locations. Score is still current released pressure
-    scores = {}  # {(t, open_valves, locations): score}
-    start = 'AA'
-    init_state = (0, frozenset(), (start, start), 0)
-    states = deque()
-    states.append(init_state)
-    while states:
-        t, open_valves, me, elephant, total_pressure = states.popleft()
-        state = t, open_valves, me, elephant
-        if scores.get(state, -1) >= total_pressure:
-            continue
-        scores[state] = total_pressure
-        if t >= 26:
-            continue
-        pressure_per_tick = sum(valves[v].flow_rate for v in open_valves)
+    # Update all distances to include the time to open the valve
+    distances = {
+        k: {
+            k2: v2 + 1
+            for k2, v2 in v.items()
+        }
+        for k, v in distances.items()
+    }
+    scores = bfs(valves, distances, 26)
+    # Get the best score for each valve combination
+    score_per_set = {}
+    for state, p in scores.items():
+        best = score_per_set.get(state.opened_valves, 0)
+        final = state.final_pressure(p)
+        score_per_set[state.opened_valves] = max(best, final)
+
+    return max(
+        score1 + score2
+        for valves1, score1 in score_per_set.items()
+        for valves2, score2 in score_per_set.items()
+        if not valves1 & valves2
+    )
 
 
 if __name__ == '__main__':
@@ -144,4 +154,9 @@ if __name__ == '__main__':
     print('Solving...')
     with report_time():
         print(part1(input_dir / 'day16.txt'))
-    # assert part2(input_dir / 'sample16.txt') == 1707
+    print('Checking sample for part 2...')
+    with report_time():
+        assert part2(input_dir / 'sample16.txt') == 1707
+    print('Solving...')
+    with report_time():
+        print(part2(input_dir / 'day16.txt'))
