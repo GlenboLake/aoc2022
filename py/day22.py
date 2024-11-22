@@ -1,8 +1,10 @@
 import re
 from collections import deque
 from enum import Enum
+from itertools import batched
+from math import sqrt
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Iterable
 
 input_dir = Path(__file__).parent.parent / 'inputs'
 
@@ -27,7 +29,7 @@ class Pos(NamedTuple):
     def go(self, other):
         assert isinstance(other, Direction)
         dr, dc = other.value[0]
-        return Pos(self.r+dr, self.c+dc)
+        return Pos(self.r + dr, self.c + dc)
 
 
 class Direction(Enum):
@@ -53,8 +55,12 @@ class Direction(Enum):
             if d.point_value == new_point_value
         }.pop()
 
-    def __add__(self, other):
-        pass
+    def flip(self):
+        new_point_value = (self.point_value + 2) % 4
+        return {
+            d for d in Direction
+            if d.point_value == new_point_value
+        }.pop()
 
     def __radd__(self, other):
         (dr, dc), _ = self.value
@@ -138,8 +144,101 @@ def part1(filename):
 
 
 def part2(filename):
-    def get_wraps(board):
-        pass
+    def get_wraps(board: dict[Pos, str]):
+        edge_length = int(sqrt(len(board) / 6))
+        edges = {
+            pos
+            for pos in board
+            if not all(
+                adj_pos in board
+                for adj_pos in pos.adjacent()
+            )
+        }
+
+        # The "min" location will definitely be a top-left corner.
+        # Going around clockwise, we'll hit the "up" edge first
+        # and the "left" edge at the end
+        start = min(board), Direction.UP
+        end = min(board), Direction.LEFT
+        border: deque[tuple[Pos, Direction]] = deque([start])
+        seams = deque()
+        while border[-1] != end:
+            pos, edge_dir = border[-1]
+            walk_dir = edge_dir.turn('R')
+            walked_pos = pos.go(walk_dir)
+            # Simple case: Still walking the same edge
+            if walked_pos in edges:
+                border.append((walked_pos, edge_dir))
+            # Second case: We've walked off the map and need to turn right
+            elif walked_pos not in board:
+                border.append((pos, walk_dir))
+            # Other case: We're walking into the middle of the map and need
+            # to turn left. This is also a "seam" that we'll need to fold along.
+            else:
+                new_pos = walked_pos.go(edge_dir)
+                new_edge_dir = edge_dir.turn('L')
+                border.append((new_pos, new_edge_dir))
+                seams.append(
+                    (
+                        (pos, edge_dir),
+                        (new_pos, new_edge_dir)
+                    )
+                )
+
+        def print_borders():
+            printed_cells = {
+                pos.go(edge): str(edge)
+                for pos, edge in border
+            }
+            row_range = min(r for r, c in printed_cells), max(r for r, c in printed_cells) + 1
+            col_range = min(c for r, c in printed_cells), max(c for r, c in printed_cells) + 1
+            print('\n'.join(
+                ''.join(
+                    printed_cells.get(Pos(r, c)) or board.get(Pos(r, c)) or ' '
+                    for c in range(*col_range)
+                )
+                for r in range(*row_range)
+            ))
+
+        class Edge(NamedTuple):
+            positions: list[pos]
+            dir: Direction
+
+            @staticmethod
+            def from_group(group: Iterable[tuple[Pos, Direction]]):
+                # Group is a list of Pos+Direction pairs. The must all have the same direction.
+                positions = [pos for pos, _ in group]
+                directions = {d for _, d in group}
+                assert len(directions) == 1
+                return Edge(positions, directions.pop())
+
+            def __repr__(self):
+                start = repr(tuple(self.positions[0]))
+                end = repr(tuple(self.positions[-1]))
+                return f'<{self.dir.name} edge {start}->{end}>'
+
+        edge_groups = [Edge.from_group(batch) for batch in batched(border, edge_length)]
+
+        seams = deque([
+            (a, b)
+            for a, b in zip(edge_groups, edge_groups[1:])
+            if a.dir.turn('L') == b.dir
+        ])
+
+        wraps = {}
+        while edge_groups:
+            left, right = seams.popleft()
+            if left not in edge_groups or right not in edge_groups:
+                continue
+            for a, b in zip(left.positions, right.positions[::-1]):
+                wraps[a, left.dir] = b, right.dir.flip()
+                wraps[b, right.dir] = a, left.dir.flip()
+            new_left = edge_groups[edge_groups.index(left) - 1]
+            new_right = edge_groups[(edge_groups.index(right) + 1) % len(edge_groups)]
+            edge_groups.remove(left)
+            edge_groups.remove(right)
+            seams.append((new_left, new_right))
+        return wraps
 
     return solve(filename, get_wraps)
 
